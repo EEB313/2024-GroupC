@@ -4,14 +4,13 @@ author: "Claire Abbasi"
 date: "2024-11-14"
 output: pdf_document
 ---
-```{r}
+```{r, warning=FALSE}
 library(dplyr)
 library(tidyverse)
 ```
 
 # Setting the dimensions for the grid using seq. Expand.grid used in order to make a data 
-frame containg all x and y cordinate combinations, intial population for each grid was set to
-0. Uniting the x and y columns to create a coordinate column while keeping x and y coloumns. Adding contstant b, d, e, and i for now.
+frame containing all x and y coordination combinations, initial population for each grid was set to0. Uniting the x and y columns to create a coordinate column while keeping x and y columns. Adding constant b, d, e, and i for now.
 
 ```{r}
 grid_dimineions  <- seq(0,5)
@@ -26,7 +25,6 @@ grid %>% unite(coordinates, c(x,y), sep = ',', remove = FALSE) %>%
 
 #Defining a funcation for the base equation 'equation_func'
 ```{r}
-
 eqation_func <- function(n, b, d, i, e){
   return(n+b*n - d*n + i*n - e*n)
 }
@@ -34,16 +32,16 @@ eqation_func <- function(n, b, d, i, e){
 ```
 
 
-#Take all emmigrants from each patch and putting into a seperate coloumn 
+#Take all emmigrants from each patch and putting into a seperate coloumn using a for loop
+this same loop will be used to redistribute the emigrants into new populations and remove
+new emigrant column in grid data frame.
 ```{r}
-grid %>%  mutate(emmigrants = n * e)
+for(i in 1:nrow(grid)){
+  grid$emigrants[i] <- grid$n[i] * grid$e[i]
+}
 ```
 
-#Distributing emmigrants into new patches in orignial grid data frame
-```{r}
 
-
-```
 
 The following is our simulator a function we made to apply the base equation to every
 patch to simulate one timestep.
