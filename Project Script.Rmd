@@ -34,6 +34,15 @@ eqation_func <- function(n, b, d, i, e){
 
 ```
 
+#Take all emmigrants from each patch and putting into data frame
+```{r}
+emmigrants_int <- grid
+for(i in 1:nrow(grid)){
+   emmigrants_int$n = grid$n[i] * grid$e[i]
+}
+
+emmigrants <- emmigrants_int %>% select(coordinates,x ,y, n)
+```
 
 
 The following is our simulator a function we made to apply the base equation to every
