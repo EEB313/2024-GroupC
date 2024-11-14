@@ -1,0 +1,76 @@
+---
+title: "EEB313 Project"
+author: "Claire Abbasi"
+date: "2024-11-14"
+output: pdf_document
+---
+```{r}
+library(dplyr)
+library(tidyverse)
+```
+
+# Setting the dimensions for the grid using seq. Expand.grid used in order to make a data 
+frame containg all x and y cordinate combinations, intial population for each grid was set to
+0. Uniting the x and y columns to create a coordinate column while keeping x and y coloumns. Adding contstant b, d, e, and i for now.
+
+```{r}
+grid_dimineions  <- seq(0,5)
+
+expand.grid(x = grid_dimineions, y = grid_dimineions) -> grid
+
+grid %>% unite(coordinates, c(x,y), sep = ',', remove = FALSE) %>% 
+  mutate(d = 0.4, b = 0.8, e = 0.2, i = 0.4, n = 0 )-> grid
+
+```
+
+
+
+#Defining a funcation for the base equation 'equation_func'
+```{r}
+
+eqation_func <- function(n, b, d, i, e){
+  return(n+b*n - d*n + i*n - e*n)
+}
+
+```
+
+
+
+The following is our simulator a function we made to apply the base equation to every
+patch to simulate one timestep.
+```{r}
+simulator <- function(data){
+  next_ns <- NULL
+  for(i in 1:nrow(data)){
+    next_ns[i] = eqation_func(data$n[i], data$b[i], data$d[i], data$i[i], data$e[i])
+  }
+  result <- data.frame(data |> mutate(n = next_ns))
+  return(result)
+}
+
+```
+
+#Example of potential visualization method
+```{r}
+simulator(data = grid) %>% ggplot(aes(x = x, y = y, fill = n)) +
+  geom_tile(colour = "black")
+```
+
+
+#Buildign an euclidean distance calculator
+```{r}
+euclidean_distance <- function(x1, x2, y1, y2){
+  return(sqrt(((x2 - x1)^2 + (y2 - y1)^2)))
+}
+euclidean_distance(0, 0, 1, 0)
+```
+
+
+
+#Take all emmigrants from each patch
+
+
+
+
+
+
