@@ -19,10 +19,9 @@ grid_dimineions  <- seq(0,5)
 expand.grid(x = grid_dimineions, y = grid_dimineions) -> grid
 
 grid %>% unite(coordinates, c(x,y), sep = ',', remove = FALSE) %>% 
-  mutate(d = 0.4, b = 0.8, e = 0.2, i = 0.4, n = 0 )-> grid
+  mutate(d = 0.4, b = 0.8, e = 0.2, i = 0.1, n = 10 )-> grid
 
 ```
-
 
 
 #Defining a funcation for the base equation 'equation_func'
@@ -34,16 +33,17 @@ eqation_func <- function(n, b, d, i, e){
 
 ```
 
-#Take all emmigrants from each patch and putting into data frame
-```{r}
-emmigrants_int <- grid
-for(i in 1:nrow(grid)){
-   emmigrants_int$n = grid$n[i] * grid$e[i]
-}
 
-emmigrants <- emmigrants_int %>% select(coordinates,x ,y, n)
+#Take all emmigrants from each patch and putting into a seperate coloumn 
+```{r}
+grid %>%  mutate(emmigrants = n * e)
 ```
 
+#Distributing emmigrants into new patches in orignial grid data frame
+```{r}
+
+
+```
 
 The following is our simulator a function we made to apply the base equation to every
 patch to simulate one timestep.
@@ -73,12 +73,7 @@ euclidean_distance <- function(x1, x2, y1, y2){
 }
 euclidean_distance(0, 0, 1, 0)
 ```
-
-
-
-#Take all emmigrants from each patch
-
-
+ 
 
 
 
