@@ -45,20 +45,22 @@ for(i in 1:nrow(grid)){
     nearest_left_x <- grid$x[i] - 1
   nearest_left_y <- grid$y[i]
   
-  left_neighbor_found <- FALSE
+  left_found <- FALSE
   for (j in 1:nrow(grid)) {
     if (grid$x[j] == nearest_left_x && grid$y[j] == nearest_left_y) {
       grid$n[j] <- grid$n[j] + grid$emigrants[i]
-      left_neighbor_found <- TRUE
+      left_found <- TRUE
       break
     }
   }
-    if (!left_neighbor_found) {
+    if (!left_found) {
     grid$n[i] <- grid$n[i] + grid$emigrants[i]
   }
   
   grid$emigrants[i] <- 0  
   grid$nearest_left_x[i] <-0
+  nearest_left_x <- 0
+  nearest_left_y <- 0
 }
 
 ```
