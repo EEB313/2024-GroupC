@@ -37,15 +37,19 @@ this same loop will be used to redistribute the emigrants only to the nearest co
 to the left for now into new populations and remove new emigrant column in grid data frame.
 ```{r}
 #emmigration_immigration <- function(data){}
+nearest_left_x <- NULL
+same_y <- NULL
+
 for(i in 1:nrow(grid)){
-  grid$emigrants[i] <- grid$n[i] * grid$e[i]
+  grid$emigrants[i] <- grid$n[i] #* grid$e[i]
   
   grid$n[i] = grid$n[i] - grid$emigrants[i]
   
     nearest_left_x <- grid$x[i] - 1
-  nearest_left_y <- grid$y[i]
+   nearest_left_y <- grid$y[i]
   
-  left_found <- FALSE
+  left_x_found <- FALSE
+ left_found <- FALSE
   for (j in 1:nrow(grid)) {
     if (grid$x[j] == nearest_left_x && grid$y[j] == nearest_left_y) {
       grid$n[j] <- grid$n[j] + grid$emigrants[i]
@@ -53,14 +57,12 @@ for(i in 1:nrow(grid)){
       break
     }
   }
-    if (!left_found) {
+  if (!left_found) {
     grid$n[i] <- grid$n[i] + grid$emigrants[i]
   }
   
   grid$emigrants[i] <- 0  
-  grid$nearest_left_x[i] <-0
-  nearest_left_x <- 0
-  nearest_left_y <- 0
+
 }
 
 ```
