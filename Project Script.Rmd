@@ -33,10 +33,13 @@ eqation_func <- function(n, b, d, i, e){
 
 
 #Take all emmigrants from each patch and putting into a seperate coloumn using a for loop
-this same loop will be used to redistribute the emigrants only to the nearest coordinate
-to the left for now into new populations and remove new emigrant column in grid data frame.
+#this same loop will be used to redistribute the emigrants only to the nearest coordinate
+#to the left for now into new populations and remove new emigrant column in grid data frame.
 ```{r}
-#emmigration_immigration <- function(data){}
+##Next objecting getting the loop to work as the emigration_immigration function to 
+#put into the larger simulator. 
+
+#emigration_immigration <- function(grid){
 nearest_left_x <- NULL
 same_y <- NULL
 
@@ -48,13 +51,12 @@ for(i in 1:nrow(grid)){
     nearest_left_x <- grid$x[i] - 1
    nearest_left_y <- grid$y[i]
   
-  left_x_found <- FALSE
+
  left_found <- FALSE
   for (j in 1:nrow(grid)) {
     if (grid$x[j] == nearest_left_x && grid$y[j] == nearest_left_y) {
       grid$n[j] <- grid$n[j] + grid$emigrants[i]
       left_found <- TRUE
-      break
     }
   }
   if (!left_found) {
