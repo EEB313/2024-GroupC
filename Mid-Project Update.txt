@@ -1,0 +1,27 @@
+The question we are trying to answer with our simulation is does a population with a high r (intrinsic growth rate) or a high K (carrying capacity) expand their range faster. We hypothesize that species with a higher r will be able to expand their range faster. This a different question and hypothesis than presented in the proposal due to 
+The ‘world’ is being created as a nested list with each patch, containing the n (population) of both populations. The parameters (r, K) for each population are contained on a separate list ‘params’. The initial state of the ‘world’ will contain an equal number of individuals from population 1 and 2 in the same patch while all other patches remain uninhabited. This initial population will be put through a simulator function, which contains several smaller functions inside that simulate year to year population growth, species competition and movement between patches, in order to generate our final data. In order to simulate year to year growth a logistic growth equation with Lotka-Voltera competition will be applied to each population (Lotka-Voltera not currently added to the logistic growth equation). To simulate migration the rbinom function will be applied to each population in order to determine the number of emigrants for each time step. To redistribute the emigrants the sample function will be used to select either -1 or +1. This will be applied to the index of their current patch enabling them to move to the patch to the right or to the left of their current patch. The ending point of our simulation will be based on when the furthest patch on either side from the initial inhabited patch becomes inhabited. At the end of the simulator we will have a winner counter that will count the number of wins for each population (this has yet to be added). 
+In order to analyze the data produced by our simulator we plan to plot the win rate of each population as a function of r and K. This will allow us to see any trends that manipulating the values of r and K may produce in the win rate. We are also able to examine the effects of r and K both independently and combine, through manipulating the values accordingly and faceting plots. To achieve this will run multiple simulations with a large variety of r and K values.
+
+The assumptions of our simulation are:
+-The populations are growing logistically before the effect of competition is applied
+-The populations are experiencing Lotka-Voltera competition.
+-Alpha 1,2 and Alpha 2,1 are equal, meaning that one population is not a stronger competitor than the other. (this may be adjusted later)
+-The populations are moving in 1-dimensional space (ie. North to South, East to West)
+-Carrying capacity is fixed 
+-Consistent habitat quality across patches
+-Constant r within the populations
+-There is an equal sex ratio in both populations
+-Ne = N (The effective population equals the total population)
+-We assume climate has no effect on the populations
+-We assume ties do not contribute to either population's win rate.
+
+Within each patch the possibilities for each population during a single time step are:
+The population can grow according to the logistic growth equation function
+The population can lose members due to the sample function used to select emigrants
+The entirety of the population can be selected for emigrations due to the sample function 
+The population can not lose members due to the sample function used to select emigrants
+The population can gain members based on immigration from the neighboring patch
+The population can receive no new members from immigration 
+A previously inhabited patch can be recolonized due to immigration
+A patch can remain uninhabited
+
