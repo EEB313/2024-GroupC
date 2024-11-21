@@ -1,0 +1,68 @@
+```{r}
+library(tidyverse)
+#world <- data.frame(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+world <- list("1" = list("n1" = 10, "n2" = 10), "2" = list("n1" = 0, "n2" = 0), "3" =  list("n1" = 0, "n2" = 0))
+params <- list("n1" = list("r" = 0.1, "k" = 1000), "n2" = list("r" = 0.9, "k" = 100))
+```
+
+
+```{r}
+migrants_number <- function(n){
+  return(rbinom(n = 1, size = n, prob = 0.5))
+}
+```
+
+
+```{r}
+#just looping over, notice that I can just ues the "pop" instead of having to index it because I didnt 
+for(patch in world){
+  for(pop in patch){
+    print(pop)
+    #print(popprint(emigrants_number(world, pop))
+  }
+}
+for(patch in world){
+    for(pop in patch){
+      print(pop)
+  }
+}
+```
+
+```{r}
+direction_generator <-function(){
+  return(sample(c(-1, 1), 1))
+}
+direction_generator()
+
+```
+
+```{r}
+growth <- function(r, k, n){
+  return((r*n*(1-(n/k))))
+}
+growth(r = 0.5, k = 100, n = 10)
+```
+
+```{r}
+simulate <- function(data, params){
+  i <- 0
+  last_patch <- str(length(data))
+  while(sum(unlist(data$last_patch)) == 0){
+    for(patch in data){
+      for(pop in patch){
+        print(pop)
+        pop <- pop + growth(params$pop$r, params$pop$k, pop)
+        migrants <- migrants_number(n = pop)
+        direction <- direction_generator()
+        destination <- as.numeric(patch) + direction
+        if(all(destination > 0 & destination < length(data))){
+          pop <- pop - migrants
+          destination$pop <- data$destination + migrants
+    i <- i + 1
+        }}}}}
+
+simulate(world, params)
+#world$"1"$n1
+#sum(unlist(world$"1"))
+```
+
