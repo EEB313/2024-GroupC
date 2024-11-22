@@ -1,33 +1,29 @@
+
+This file represents the coded portion of our project, which will be combined with our written portion for the final submission
+
+
+Just loading any necessary libraries
 ```{r}
 library(tidyverse)
-#world <- data.frame(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+
+```
+
+For proof-of-concept we are currently manually creating one specific world and set of parameters to demonstrate how the functions will run on this example
+```{r}
 world <- list("1" = list("n1" = 10, "n2" = 10), "2" = list("n1" = 0, "n2" = 0), "3" =  list("n1" = 0, "n2" = 0))
 params <- list("n1" = list("r" = 0.1, "k" = 1000), "n2" = list("r" = 0.9, "k" = 100))
 ```
+Now that the world is created, we have made a set of functions and algorithms to run our simulation.
 
 
+The following will determine how many individuals will migrate from a patch based on a binomial draw
 ```{r}
 migrants_number <- function(n){
   return(rbinom(n = 1, size = n, prob = 0.5))
 }
 ```
 
-
-```{r}
-#just looping over, notice that I can just ues the "pop" instead of having to index it because I didnt 
-for(patch in world){
-  for(pop in patch){
-    print(pop)
-    #print(popprint(emigrants_number(world, pop))
-  }
-}
-for(patch in world){
-    for(pop in patch){
-      print(pop)
-  }
-}
-```
-
+The following will randomly determine which direction a population will migrate to.
 ```{r}
 direction_generator <-function(){
   return(sample(c(-1, 1), 1))
@@ -36,6 +32,7 @@ direction_generator()
 
 ```
 
+The following is the population growth, that calculates by how much a given population will grow based on the logistic growth equation 
 ```{r}
 growth <- function(r, k, n){
   return((r*n*(1-(n/k))))
@@ -43,26 +40,52 @@ growth <- function(r, k, n){
 growth(r = 0.5, k = 100, n = 10)
 ```
 
-```{r}
-simulate <- function(data, params){
-  i <- 0
-  last_patch <- str(length(data))
-  while(sum(unlist(data$last_patch)) == 0){
-    for(patch in data){
-      for(pop in patch){
-        print(pop)
-        pop <- pop + growth(params$pop$r, params$pop$k, pop)
-        migrants <- migrants_number(n = pop)
-        direction <- direction_generator()
-        destination <- as.numeric(patch) + direction
-        if(all(destination > 0 & destination < length(data))){
-          pop <- pop - migrants
-          destination$pop <- data$destination + migrants
-    i <- i + 1
-        }}}}}
+The following chunk simulates the the growth and migration for 10 timesteps, note that there are a lot of things that we have hard coded a lot of the steps here instead of creating functions for everything so that we have a proof of concept that works. It first applies the logistic growth rate on all the populations in all the patches, then applies the movement function on each population in each patch after they have grown for 1 timestep, as this meets our assumptions more accurately.
+the plan is to have each of these steps converted to their unique functions of growth and movement across any world of any size. Then they will be combined to one "simulate" function so that eventually we can include the checker that will stop the simulation when one of the populations wins. 
 
-simulate(world, params)
-#world$"1"$n1
-#sum(unlist(world$"1"))
+please ignore the comments which were used for troubleshooting
+
+also note that currently the _ceiling()_ function is being called on the n parameter when determining the number of migrants, as not doing so causes rbinom to take a float, that was generated as a result of us using the logistic growth function, and rbinom cannot work on floats, it requires whole numbers/integers
+```{r}
+i <- 0
+while(i<10){
+  for(patch in seq(1, length(world))){
+    #print(seq(1, length(world)))
+    #print(patch)
+    for(pop in seq(1, length(world[[patch]]))){
+      #print(seq(1, length(patch)))
+      #print(pop)
+      curr_pop_name <- names(world[[patch]][pop])
+      #print(curr_pop_name)
+      curr_pop <- world[[patch]][[curr_pop_name]]
+      #print(curr_pop)
+      #print(growth(r = params[[curr_pop_name]][["r"]], k = params[[curr_pop_name]][["k"]], n = curr_pop))
+      world[[patch]][[curr_pop_name]] <- curr_pop + growth(r = params[[curr_pop_name]][["r"]], k = params[[curr_pop_name]][["k"]], n = curr_pop) -> curr_pop
+      #print(curr_pop)
+    }}
+  for(patch in seq(1, length(world))){
+    #print(seq(1, length(world)))
+    #print(patch)
+    for(pop in seq(1, length(world[[patch]]))){
+      #print(seq(1, length(patch)))
+      #print(pop)
+      curr_pop_name <- names(world[[patch]][pop])
+     #print(curr_pop_name)
+      curr_pop <- world[[patch]][[curr_pop_name]]
+      #print(curr_pop)
+      migrants <- migrants_number(ceiling(curr_pop))
+      direction <- direction_generator()
+      destination <- patch + direction
+      #print(destination)
+      if(all(destination > 0 & destination < length(world))){
+        world[[patch]][[curr_pop_name]] <- world[[patch]][[curr_pop_name]] - migrants
+        world[[destination]][[curr_pop_name]] <- world[[destination]][[curr_pop_name]] + migrants
+    }
+   }
+  }
+  i <- i + 1
+}    
+
 ```
 
+From here, we plan on tracking the winners, and seeing frequently each population wins as their parameters(r and k) change, and plot our results
