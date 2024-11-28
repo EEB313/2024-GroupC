@@ -100,16 +100,30 @@ while(i<1000){
   }
   if(sum(unlist(world$"10")) > 0){
     result <- list(world)
-    simulation_data %>% add_row(worlds = result, timestep = i, parameters = list(params)) -> simulation_data
-    return(simulation_data)   
-  }
+    if(world[["10"]][["n1"]] == 0){
+      if(world[["10"]][["n2"]] > 0){
+        winner <- "n2"
+      }
+    else if(world[["10"]][["n2"]] == 0){
+        winner <- "n1"
+    }
+    else{
+      winner <- NA
+      }
+    }
+    simulation_data %>% add_row(worlds = result, timestep = i, parameters = list(params, winner = winner)) -> simulation_data
+    return(simulation_data)
+}
   i <- i + 1
 }
-}
-simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list())
-for(i in seq(1, 100, 1)){
+  }
+
+
+simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = numeric())
+for(i in seq(1, 1000, 1)){
 simulation_data <- simulate(my_world, my_params)
 }
+
 ```
 
 ```{r}
