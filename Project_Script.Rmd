@@ -8,7 +8,7 @@ library(tidyverse)
 ```
 
 For proof-of-concept we are currently manually creating one specific world and set of parameters to demonstrate how the functions will run on this example
-```{r}
+```{r world and parameters}
 my_world <- list("1" = list("n1" = 10, "n2" = 10), 
               "2" = list("n1" = 0, "n2" = 0), 
               "3" = list("n1" = 0, "n2" = 0),
@@ -20,20 +20,20 @@ my_world <- list("1" = list("n1" = 10, "n2" = 10),
               "9" = list("n1" = 0, "n2" = 0), 
               "10" = list("n1" = 0, "n2" = 0))
 my_params <- list("n1" = list("r" = 0.1, "k" = 1000), 
-               "n2" = list("r" = 0.9, "k" = 100))
+               "n2" = list("r" = 0.1, "k" = 1000))
 ```
 Now that the world is created, we have made a set of functions and algorithms to run our simulation.
 
 
 The following will determine how many individuals will migrate from a patch based on a binomial draw
-```{r}
+```{r migrant num function}
 migrants_number <- function(n){
   return(rbinom(n = 1, size = n, prob = 0.5))
 }
 ```
 
 The following will randomly determine which direction a population will migrate to.
-```{r}
+```{r direction generator}
 direction_generator <-function(){
   return(sample(c(-1, 1), 1))
 }
@@ -42,7 +42,7 @@ direction_generator()
 ```
 
 The following is the population growth, that calculates by how much a given population will grow based on the logistic growth equation 
-```{r}
+```{r growth function}
 growth <- function(r, k, n){
   return((1 + r*(1-n/k))*n)
 }
@@ -55,63 +55,76 @@ the plan is to have each of these steps converted to their unique functions of g
 please ignore the comments which were used for troubleshooting
 
 also note that currently the _ceiling()_ function is being called on the n parameter when determining the number of migrants, as not doing so causes rbinom to take a float, that was generated as a result of us using the logistic growth function, and rbinom cannot work on floats, it requires whole numbers/integers
-```{r}
+```{r simulate function}
 simulate <- function(world, params){
-
-i <- 0
-while(i<1000){
-  
-#growth on all patches
-  for(patch in seq(1, length(world))){
-    for(pop in seq(1, length(world[[patch]]))){
-      curr_pop_name <- names(world[[patch]][pop])
-      curr_pop <- world[[patch]][[curr_pop_name]]
-      world[[patch]][[curr_pop_name]] <- round(growth(r = params[[curr_pop_name]][["r"]], k = params[[curr_pop_name]][["k"]], n = curr_pop)) -> curr_pop
-    }
-  }
-  
-  #movement on all patches
-  for(patch in seq(1, length(world))){
-    for(pop in seq(1, length(world[[patch]]))){
-      curr_pop_name <- names(world[[patch]][pop])
-      curr_pop <- world[[patch]][[curr_pop_name]]
-      migrants <- migrants_number(floor(curr_pop))
-      direction <- direction_generator()
-      destination <- patch + direction
-      if(all(destination > 0 & destination <= length(world))){
-        world[[patch]][[curr_pop_name]] <- world[[patch]][[curr_pop_name]] - migrants
-        world[[destination]][[curr_pop_name]] <- world[[destination]][[curr_pop_name]] + migrants
-    }
-   }
-  }
-  
-#checking if one of them won
-  if(sum(unlist(world$"10")) > 0){
-    result <- list(world)
+  # running for a max of 1000 time steps
+  # should stop before 1000 when a population wins
+  i <- 0
+  while(i<1000){
     
-#checking who won  
-    #if(world[["10"]][["n1"]] == 0){
-      #if(world[["10"]][["n2"]] > 0){
-       # winner <- "n2"
-      #}
-   # else if(world[["10"]][["n2"]] == 0){
-       # winner <- "n1"
-   # }
-   # else{
-    #  winner <- NA
-     # }
-   # }
+    # growth on all patches
+    for(patch in seq(1, length(world))){
+      
+      # growth within each patch
+      for(pop in seq(1, length(world[[patch]]))){
+        curr_pop_name <- names(world[[patch]][pop])
+        curr_pop <- world[[patch]][[curr_pop_name]]
+        world[[patch]][[curr_pop_name]] <- round(growth(r = params[[curr_pop_name]][["r"]], k = params[[curr_pop_name]][["k"]], n = curr_pop)) -> curr_pop
+      }
+    }
     
-  #put the results in a new row in simulation_data  
-    simulation_data %>% add_row(worlds = result, timestep = i, parameters = list(params, winner  = "n1" )) -> simulation_data
-    return(simulation_data)
+    # movement on all patches
+    for(patch in seq(1, length(world))){
+      
+      # movement of each patch
+      for(pop in seq(1, length(world[[patch]]))){
+        curr_pop_name <- names(world[[patch]][pop])
+        curr_pop <- world[[patch]][[curr_pop_name]]
+        migrants <- migrants_number(floor(curr_pop))
+        direction <- direction_generator()
+        destination <- patch + direction
+        if(all(destination > 0 & destination <= length(world))){
+          world[[patch]][[curr_pop_name]] <- world[[patch]][[curr_pop_name]] - migrants
+          world[[destination]][[curr_pop_name]] <- world[[destination]][[curr_pop_name]] + migrants
+      }
+     }
+    }
+    
+    # checking if one of them won
+    if(sum(unlist(world$"10")) > 0){
+      result <- list(world)
+      last_patch <- unlist(world[["10"]])
+      
+      # checking who won
+      winner <- case_when(
+        last_patch[[1]] > 0 & last_patch[[2]] > 0 ~ NA,
+        last_patch[[1]] == 0 & last_patch[[2]] > 0 ~ "n2",
+        last_patch[[2]] == 0 & last_patch[[1]] > 0 ~ "n1"
+          )
+      
+      loser <- case_when(
+        winner == "n1" ~ "n2",
+        winner == "n2" ~ "n1",
+        winner == NA ~ NA
+      )
+      
+      winner_r <- params[[winner]][["r"]]
+      winner_k <- params[[winner]][["k"]]
+      loser_r <- params[[loser]][["r"]]
+      loser_k <- params[[loser]][["k"]]
+      
+      # put the results in a new row in simulation_data  
+      simulation_data %>% add_row(worlds = result, timestep = i, parameters = list(params), winner = winner, winner_r = winner_r, winner_k = winner_k, loser_r = loser_r, loser_k = loser_k) -> simulation_data
+      return(simulation_data)
+    }
+    i <- i + 1
   }
-  i <- i + 1
-}
   }
+```
 
-#making the dataframe empty
-simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = numeric())
+```{r}
+# #making the dataframe empty
+simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = character(), winner_r = numeric(), winner_k = numeric(), loser_r = numeric(), loser_k = numeric())
 
 #running our simulation for howevermany replications we want
 for(i in seq(1, 1000, 1)){
