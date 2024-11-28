@@ -91,9 +91,9 @@ simulate <- function(world, params){
     }
     
     # checking if one of them won
-    if(sum(unlist(world$"10")) > 0){
+    if(sum(unlist(world[[length(world)]])) > 0){
       result <- list(world)
-      last_patch <- unlist(world[["10"]])
+      last_patch <- unlist(world[[length(world)]])
       
       # checking who won
       winner <- case_when(
@@ -122,17 +122,103 @@ simulate <- function(world, params){
   }
 ```
 
-```{r}
+```{r testing simulation function}
 # #making the dataframe empty
-simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = character(), winner_r = numeric(), winner_k = numeric(), loser_r = numeric(), loser_k = numeric())
-
-#running our simulation for howevermany replications we want
-for(i in seq(1, 1000, 1)){
-simulation_data <- simulate(my_world, my_params)
-}
+# simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = character(), winner_r = numeric(), winner_k = numeric(), loser_r = numeric(), loser_k = numeric())
+# 
+# #running our simulation for howevermany replications we want
+# for(i in seq(1, 1000, 1)){
+# simulation_data <- simulate(my_world, my_params)
+# }
 
 ```
 
 
 
 From here, we plan on tracking the winners, and seeing frequently each population wins as their parameters(r and k) change, and plot our results
+
+```{r dummy world and parameters}
+# dummy_world <- list("1" = list("n1" = 10, "n2" = 10), 
+#                     "2" = list("n1" = 0, "n2" = 0), 
+#                     "3" = list("n1" = 0, "n2" = 0),
+#                     "4" = list("n1" = 0, "n2" = 0), 
+#                     "5" = list("n1" = 0, "n2" = 0), 
+#                     "6" = list("n1" = 0, "n2" = 0), 
+#                     "7" = list("n1" = 0, "n2" = 0), 
+#                     "8" = list("n1" = 0, "n2" = 0), 
+#                     "9" = list("n1" = 0, "n2" = 0), 
+#                     "10" = list("n1" = 0, "n2" = 0))
+
+# make world with a number of patches
+dummy_world <- vector(mode="list",length=10)
+names(dummy_world) <- as.character(1:length(dummy_world))
+dummy_world[[1]] <- list("n1" = 10, "n2" = 10)
+
+for (i in 2:length(dummy_world)){
+  dummy_world[[i]] <- list("n1" = 0, "n2" = 0)
+  i<-i+1
+}
+
+dummy_params1 <- list("n1" = list("r" = 0.1, "k" = 1000), 
+                      "n2" = list("r" = 0.1, "k" = 1000))
+
+dummy_params2 <- list("n1" = list("r" = 0.05, "k" = 1000), 
+                      "n2" = list("r" = 0.1, "k" = 1000))
+
+dummy_params3 <- list("n1" = list("r" = 0.1, "k" = 500), 
+                      "n2" = list("r" = 0.1, "k" = 1000))
+```
+
+```{r dummy simulations}
+# SIM 1
+#making the dataframe empty
+simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = character(), winner_r = numeric(), winner_k = numeric(), loser_r = numeric(), loser_k = numeric())
+
+#running our simulation for howevermany replications we want
+for(i in seq(1, 1000, 1)){
+simulation_data <- simulate(dummy_world, dummy_params1)
+}
+
+dummy_sim1 <- cbind(simulation_data, simulation = 1)
+
+# SIM 2
+#making the dataframe empty
+simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = character(), winner_r = numeric(), winner_k = numeric(), loser_r = numeric(), loser_k = numeric())
+
+#running our simulation for howevermany replications we want
+for(i in seq(1, 1000, 1)){
+simulation_data <- simulate(dummy_world, dummy_params1)
+}
+
+dummy_sim2 <- cbind(simulation_data, simulation = 2)
+
+# SIM 3
+#making the dataframe empty
+simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = character(), winner_r = numeric(), winner_k = numeric(), loser_r = numeric(), loser_k = numeric())
+
+#running our simulation for howevermany replications we want
+for(i in seq(1, 1000, 1)){
+simulation_data <- simulate(dummy_world, dummy_params1)
+}
+
+dummy_sim3 <- cbind(simulation_data, simulation = 3)
+
+
+dummy_all <- rbind(dummy_sim1,dummy_sim2,dummy_sim3)
+```
+
+```{r plots}
+dummy_all %>%
+  ggplot(aes(x=timestep, fill=winner)) +
+  geom_histogram() +
+  facet_wrap(dummy_all$simulation)
+
+dummy_all %>%
+  group_by(simulation, winner) %>%
+  ggplot(aes(timestep, fill=interaction(simulation,winner))) +
+  geom_histogram()
+
+  
+```
+
+
