@@ -6,7 +6,7 @@ Recursion equation:
 
 n = n[t+1] - n[t] = r (1 - n[t]/K) n[t]
 
-```{r}
+```{r libraries}
 require(tidyverse)
 ```
 
@@ -37,43 +37,49 @@ direction_generator <-function(){
 }
 ```
 
-```{r}
-# test parameters and state
-params <- c(r = 1, K = 1000, N0 = 10)
-times <- seq(0,100,1)
-ns <- list("t"=times);ns$n[1]<-params[["N0"]]
-ns <- list("n"=params[["N0"]])
-initial_state <- c(t=ns$t[1], n=ns$n[1])
-
-# testing the function
-step_growth(initial_state, params)
-```
-
-```{r test initial world}
-world <- list("1" = list("n1" = 10, "n2" = 10), 
-              "2" = list("n1" = 0, "n2" = 0), 
-              "3" =  list("n1" = 0, "n2" = 0),
-              "4" = list("n1" = 0, "n2" = 0), 
-              "5" = list("n1" = 0, "n2" = 0), 
-              "6" = list("n1" = 0, "n2" = 0), 
-              "7" = list("n1" = 0, "n2" = 0), 
-              "8" = list("n1" = 0, "n2" = 0), 
-              "9" = list("n1" = 0, "n2" = 0), 
-              "10" = list("n1" = 0, "n2" = 0)
-              )
+```{r testing step growth function}
+# # test parameters and state
+# params <- c(r = 1, K = 1000, N0 = 10)
+# times <- seq(0,100,1)
+# ns <- list("t"=times);ns$n[1]<-params[["N0"]]
+# ns <- list("n"=params[["N0"]])
+# initial_state <- c(t=ns$t[1], n=ns$n[1])
+# 
+# # testing the function
+# step_growth(initial_state, params)
 ```
 
 ```{r}
-world <- list(p1 = list(n1 = 10, n2 = 10),
-              p2 = list(n1 = 5, n2 = 5),
-              p3 = list(n1 = 1, n2 = 0),
-              p4 = list(n1 = 10, n2 = 0))
+# world <- list("1" = list("n1" = 10, "n2" = 10), 
+#               "2" = list("n1" = 0, "n2" = 0), 
+#               "3" =  list("n1" = 0, "n2" = 0),
+#               "4" = list("n1" = 0, "n2" = 0), 
+#               "5" = list("n1" = 0, "n2" = 0), 
+#               "6" = list("n1" = 0, "n2" = 0), 
+#               "7" = list("n1" = 0, "n2" = 0), 
+#               "8" = list("n1" = 0, "n2" = 0), 
+#               "9" = list("n1" = 0, "n2" = 0), 
+#               "10" = list("n1" = 0, "n2" = 0)
+#               )
+```
+
+```{r test world and parameters}
+world <- list(p1 = list(n1 = 10, n2 = 5),
+              p2 = list(n1 = 0, n2 = 0),
+              p3 = list(n1 = 0, n2 = 0),
+              p4 = list(n1 = 0, n2 = 0))
+
+params <- list(n1_r = 1,
+               n2_r = 1,
+               n1_K = 1000,
+               n2_K = 1000
+            )
 ```
 
 
 ```{r world step growth function}
-world_step_growth <- function(world, params, steps){
-  for(t in 1:length(steps)){
+world_step_growth <- function(world, params, steps=1){
+  for(t in 1:steps){
     now_world <- world
     patches <- c(names(world))
     
@@ -100,15 +106,20 @@ world_step_growth <- function(world, params, steps){
 }
 ```
 
+```{r test world step growth function}
+#world_step_growth(world, params)
+```
+
 ```{r}
-migration_step <- function(world, steps){
-  for (t in 1:length(steps)){
+migration_step <- function(world, steps=1){
+  for (t in 1:steps){
+    patches <- c(names(world))
     
     # know number of migrants per patch
-    migrants <- map_depth(world, 2, migrants_number)
+#    migrants <- map_depth(world, 2, migrants_number)
     
     # know direction of migrants per patch
-    directions <- map_depth(world, 2, \(x) direction_generator())
+#    directions <- map_depth(world, 2, \(x) direction_generator())
     
     # know migrant origin patch
     migrant_origins <- map_depth(world, 2, \(x) x=0)
@@ -118,6 +129,8 @@ migration_step <- function(world, steps){
       migrant_origins[[i]][[2]] <- i
     }
     
+    migrant_origins
+    
     # know migrant destination patch
     migrant_destinations <- migrant_origins
     
@@ -126,17 +139,29 @@ migration_step <- function(world, steps){
       migrant_destinations[[i]][[2]] <- migrant_origins[[i]][[2]] + directions[[i]][[2]]
     }
     
+    migrant_destinations
+    
     # validate destination of migrants
     validated_dest <- migrant_destinations
     
     for (i in 1:length(patches)){
-      if (validated_dest[[i]][[1]] == 0 | validated_dest[[i]][[1]] > length(patches)){
-        validated_dest[[i]][[1]] <- migrant_origins[[i]][[1]]
+      # 
+      if (migrants[[i]][[1]] > 0){
+        if ((validated_dest[[i]][[1]] == 0 | validated_dest[[i]][[1]] > length(patches))){
+          validated_dest[[i]][[1]] <- migrant_origins[[i]][[1]]
+        }
       }
-      if (validated_dest[[i]][[2]] == 0 | validated_dest[[i]][[2]] > length(patches)){
-        validated_dest[[i]][[2]] <- migrant_origins[[i]][[2]]
+      
+      else if (migrants[[i]][[1]] > 0){
+        if (validated_dest[[i]][[2]] == 0 | validated_dest[[i]][[2]] > length(patches)){
+          validated_dest[[i]][[2]] <- migrant_origins[[i]][[2]]
+        }
       }
+      
+      
     }
+    
+    validated_dest
     
     # add migrants from population of destination patch
     next_world <- world
@@ -164,6 +189,7 @@ migration_step <- function(world, steps){
 
 ```{r simulation function}
 simulation <- function(world, params, times, steps = seq(0,1,1)){
+  patches <- c(names(world))
   next_world <- world
   for (t in 1:length(times)){
       next_world <- world_step_growth(next_world, params, steps)
@@ -173,26 +199,8 @@ simulation <- function(world, params, times, steps = seq(0,1,1)){
 }
 ```
 
-
-```{r testing world step function}
-world <- list(p1 = list(n1 = 10, n2 = 10),
-              p2 = list(n1 = 5, n2 = 5),
-              p3 = list(n1 = 1, n2 = 0),
-              p4 = list(n1 = 10, n2 = 0))
-
-params <- c(n1_r = 1,
-            n2_r = 1,
-            n1_K = 1000,
-            n2_K = 1000
-            )
-
-steps <- seq(0,1,1)
-
-world_step_growth(world, params, steps)  
-```
-
 ```{r testing migration step function}
-migration_step(world,steps)
+migration_step(world)
 ```
 
 ```{r testing simulation function}
@@ -201,7 +209,7 @@ world <- list(p1 = list(n1 = 10, n2 = 10),
               p3 = list(n1 = 1, n2 = 0),
               p4 = list(n1 = 10, n2 = 0))
 
-params <- c(n1_r = 0.1,
+params <- c(n1_r = 0.01,
             n2_r = 0.01,
             n1_K = 1000,
             n2_K = 1000
