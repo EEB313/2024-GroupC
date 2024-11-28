@@ -1,170 +1,216 @@
+Logistic growth in discrete time
 
+n[t+1] = Population size in next generation = (1 + r (1 - n[t]/K)) n[t]
 
-Just loading any necessary libraries
+Recursion equation:
+
+n = n[t+1] - n[t] = r (1 - n[t]/K) n[t]
 
 ```{r}
-library(tidyverse)
-
+require(tidyverse)
 ```
 
-For proof-of-concept we are currently manually creating one specific world and set of parameters to demonstrate how the functions will run on this example
-```{r}
-world <- list("1" = list("n1" = 10, "n2" = 10), "2" = list("n1" = 0, "n2" = 0), "3" =  list("n1" = 0, "n2" = 0),"4" = list("n1" = 0, "n2" = 0), "5" = list("n1" = 0, "n2" = 0), "6" = list("n1" = 0, "n2" = 0), "7" = list("n1" = 0, "n2" = 0), "8" = list("n1" = 0, "n2" = 0), "9" = list("n1" = 0, "n2" = 0), "10" = list("n1" = 0, "n2" = 0))
-params <- list("n1" = list("r" = 1, "k" = 1000), "n2" = list("r" = 10, "k" = 100))
+```{r step growth function}
+# calculates n[t+1] from state n[t] and parameters
+# RETURNS NEXT TIME STEP POPULATION SIZE NOT HOW MUCH GROWTH
+step_growth <- function(state, params){
+  with(as.list(c(state,params)),{
+  nt <- state[["n"]]
+  r <- params[["r"]]
+  K <- params[["K"]]
+  
+  next_state <- (1 + r*(1-nt/K))*nt
+  return(round(as.numeric(next_state)))
+  })
+}
 ```
-Now that the world is created, we have made a set of functions and algorithms to run our simulation.
 
-
-The following will determine how many individuals will migrate from a patch based on a binomial draw
-```{r}
+```{r num of migrants function}
 migrants_number <- function(n){
   return(rbinom(n = 1, size = n, prob = 0.5))
 }
 ```
 
-The following will randomly determine which direction a population will migrate to.
-```{r}
+```{r direction randomizer}
 direction_generator <-function(){
   return(sample(c(-1, 1), 1))
 }
-direction_generator()
-
-```
-
-The following is the population growth, that calculates by how much a given population will grow based on the logistic growth equation 
-```{r}
-growth <- function(r, k, n){
-  #return((r*n*(1-(n/k)))) #This is the origal base logistic growth equation
-  #return((n+(log(r, base = exp(1))*n*(1-(n/k)))))
-  return((r*(1-(n/k)))*n)
-}
-growth(r = 1, k = 1000, n = 10)
-```
-
-The following chunk simulates the the growth and migration for 10 timesteps, note that there are a lot of things that we have hard coded a lot of the steps here instead of creating functions for everything so that we have a proof of concept that works. It first applies the logistic growth rate on all the populations in all the patches, then applies the movement function on each population in each patch after they have grown for 1 timestep, as this meets our assumptions more accurately.
-the plan is to have each of these steps converted to their unique functions of growth and movement across any world of any size. Then they will be combined to one "simulate" function so that eventually we can include the checker that will stop the simulation when one of the populations wins. 
-
-please ignore the comments which were used for troubleshooting
-
-also note that currently the _ceiling()_ function is being called on the n parameter when determining the number of migrants, as not doing so causes rbinom to take a float, that was generated as a result of us using the logistic growth function, and rbinom cannot work on floats, it requires whole numbers/integers
-```{r}
-test_data <- c()
-#simulate <- function(world, params){
-i <- 0
-while(i<1000){
-  for(patch in seq(1, length(world))){
-    #print(seq(1, length(world)))
-    #print(patch)
-    for(pop in seq(1, length(world[[patch]]))){
-      #print(seq(1, length(patch)))
-      #print(pop)
-      curr_pop_name <- names(world[[patch]][pop])
-      #print(curr_pop_name)
-      curr_pop <- world[[patch]][[curr_pop_name]]
-      print(curr_pop)
-      #print(growth(r = params[[curr_pop_name]][["r"]], k = params[[curr_pop_name]][["k"]], n = curr_pop))
-      world[[patch]][[curr_pop_name]] <- growth(r = params[[curr_pop_name]][["r"]], k = params[[curr_pop_name]][["k"]], n = curr_pop) -> curr_pop
-      print(curr_pop)
-    }}
-  for(patch in seq(1, length(world))){
-    #print(seq(1, length(world)))
-    #print(patch)
-    for(pop in seq(1, length(world[[patch]]))){
-      #print(seq(1, length(patch)))
-      #print(pop)
-      curr_pop_name <- names(world[[patch]][pop])
-     #print(curr_pop_name)
-      curr_pop <- world[[patch]][[curr_pop_name]]
-      #print(curr_pop)
-      migrants <- migrants_number(floor(curr_pop))
-      direction <- direction_generator()
-      destination <- patch + direction
-      #print(destination)
-      if(all(destination > 0 & destination <= length(world))){
-        world[[patch]][[curr_pop_name]] <- world[[patch]][[curr_pop_name]] - migrants
-        world[[destination]][[curr_pop_name]] <- world[[destination]][[curr_pop_name]] + migrants
-    }
-   }
-  }
-  if(sum(unlist(world$"10")) > 0){
-    result <- list(world)
-    test_data <- c(test_data, result)
-    return(result)    
-  }
-  i <- i + 1
-}
-
-test_frame <- data_frame(worlds = test_data)
-test_frame$worlds[1]
-```
-
-
-```{r}
-growth_step <- function(world, params){
-  for(patch in seq(1, length(world))){
-    #print(seq(1, length(world)))
-    #print(patch)
-    for(pop in seq(1, length(world[[patch]]))){
-      #print(seq(1, length(patch)))
-      #print(pop)
-      curr_pop_name <- names(world[[patch]][pop])
-      #print(curr_pop_name)
-      curr_pop <- world[[patch]][[curr_pop_name]]
-      #print(curr_pop)
-      #print(growth(r = params[[curr_pop_name]][["r"]], k = params[[curr_pop_name]][["k"]], n = curr_pop))
-      world[[patch]][[curr_pop_name]] <- curr_pop + growth(r = params[[curr_pop_name]][["r"]], k = params[[curr_pop_name]][["k"]], n = curr_pop) -> curr_pop
-      #print(curr_pop)
-    }}
-return(world)
-}
 ```
 
 ```{r}
-migration_step <- function(world, params){
-  for(patch in seq(1, length(world))){
-    #print(seq(1, length(world)))
-    #print(patch)
-    for(pop in seq(1, length(world[[patch]]))){
-      #print(seq(1, length(patch)))
-      #print(pop)
-      curr_pop_name <- names(world[[patch]][pop])
-     #print(curr_pop_name)
-      curr_pop <- world[[patch]][[curr_pop_name]]
-      #print(curr_pop)
-      migrants <- migrants_number(floor(curr_pop))
-      direction <- direction_generator()
-      destination <- patch + direction
-      #print(destination)
-      if(all(destination > 0 & destination <= length(world))){
-        world[[patch]][[curr_pop_name]] <- world[[patch]][[curr_pop_name]] - migrants
-        world[[destination]][[curr_pop_name]] <- world[[destination]][[curr_pop_name]] + migrants
-    }
-   }
-  }
-return(world)
-}
+# test parameters and state
+params <- c(r = 1, K = 1000, N0 = 10)
+times <- seq(0,100,1)
+ns <- list("t"=times);ns$n[1]<-params[["N0"]]
+ns <- list("n"=params[["N0"]])
+initial_state <- c(t=ns$t[1], n=ns$n[1])
+
+# testing the function
+step_growth(initial_state, params)
+```
+
+```{r test initial world}
+world <- list("1" = list("n1" = 10, "n2" = 10), 
+              "2" = list("n1" = 0, "n2" = 0), 
+              "3" =  list("n1" = 0, "n2" = 0),
+              "4" = list("n1" = 0, "n2" = 0), 
+              "5" = list("n1" = 0, "n2" = 0), 
+              "6" = list("n1" = 0, "n2" = 0), 
+              "7" = list("n1" = 0, "n2" = 0), 
+              "8" = list("n1" = 0, "n2" = 0), 
+              "9" = list("n1" = 0, "n2" = 0), 
+              "10" = list("n1" = 0, "n2" = 0)
+              )
 ```
 
 ```{r}
-simulate <- function(world, param){
-  while(i < 1000){
-    growth_step(world, params) |>
-      migration_step(params = param) -> result
+world <- list(p1 = list(n1 = 10, n2 = 10),
+              p2 = list(n1 = 5, n2 = 5),
+              p3 = list(n1 = 1, n2 = 0),
+              p4 = list(n1 = 10, n2 = 0))
+```
+
+
+```{r world step growth function}
+world_step_growth <- function(world, params, steps){
+  for(t in 1:length(steps)){
+    now_world <- world
+    patches <- c(names(world))
     
-      if(sum(unlist(result$"10")) > 0){
-    result <- world
-    return(result)    
-  }
+    n1_params <- c(r = params[["n1_r"]], K = params[["n1_K"]])
+    n2_params <- c(r = params[["n2_r"]], K = params[["n2_K"]])
     
+    next_world <- map_depth(world, 2, \(x) x=0)
+    
+    for (i in 1:length(patches)){
+      now_patch <- world[[i]]
+      
+      now_n1_state <- c(n=now_patch[[1]][[1]])
+      now_n2_state <- c(n=now_patch[[2]][[1]])
+        
+      next_n1_state <- step_growth(now_n1_state,n1_params)
+      next_n2_state <- step_growth(now_n2_state,n2_params)
+  
+      next_world <- assign_in(next_world, list(i, "n1"), next_n1_state)
+      next_world <- assign_in(next_world, list(i, "n2"), next_n2_state)
+    }
+    world <- next_world
   }
+  return(world)
 }
-
 ```
 
 ```{r}
-simulate(my_world, my_params)
+migration_step <- function(world, steps){
+  for (t in 1:length(steps)){
+    
+    # know number of migrants per patch
+    migrants <- map_depth(world, 2, migrants_number)
+    
+    # know direction of migrants per patch
+    directions <- map_depth(world, 2, \(x) direction_generator())
+    
+    # know migrant origin patch
+    migrant_origins <- map_depth(world, 2, \(x) x=0)
+    
+    for (i in 1:length(patches)){
+      migrant_origins[[i]][[1]] <- i
+      migrant_origins[[i]][[2]] <- i
+    }
+    
+    # know migrant destination patch
+    migrant_destinations <- migrant_origins
+    
+    for (i in 1:length(patches)){
+      migrant_destinations[[i]][[1]] <- migrant_origins[[i]][[1]] + directions[[i]][[1]]
+      migrant_destinations[[i]][[2]] <- migrant_origins[[i]][[2]] + directions[[i]][[2]]
+    }
+    
+    # validate destination of migrants
+    validated_dest <- migrant_destinations
+    
+    for (i in 1:length(patches)){
+      if (validated_dest[[i]][[1]] == 0 | validated_dest[[i]][[1]] > length(patches)){
+        validated_dest[[i]][[1]] <- migrant_origins[[i]][[1]]
+      }
+      if (validated_dest[[i]][[2]] == 0 | validated_dest[[i]][[2]] > length(patches)){
+        validated_dest[[i]][[2]] <- migrant_origins[[i]][[2]]
+      }
+    }
+    
+    # add migrants from population of destination patch
+    next_world <- world
+    
+    for (i in 1:length(patches)){
+      n1_dest <- validated_dest[[i]][[1]]
+      next_world[[n1_dest]][[1]] <- next_world[[n1_dest]][[1]] + migrants[[n1_dest]][[1]]
+      
+      n2_dest <- validated_dest[[i]][[2]]
+      next_world[[n2_dest]][[2]] <- next_world[[n2_dest]][[2]] + migrants[[n2_dest]][[2]]
+    }
+    
+    # subtract migrants to population of origin patch
+    now_world <- world
+    
+    for (i in 1:length(patches)){
+      next_world[[i]][[1]] <- next_world[[i]][[1]] - migrants[[i]][[1]]
+      next_world[[i]][[2]] <- next_world[[i]][[2]] - migrants[[i]][[2]]
+    }
+    world <- next_world
+  }
+  return(world)
+}
+```
+
+```{r simulation function}
+simulation <- function(world, params, times, steps = seq(0,1,1)){
+  next_world <- world
+  for (t in 1:length(times)){
+      next_world <- world_step_growth(next_world, params, steps)
+      migration_step(next_world, steps)
+  }
+  return(next_world)
+}
+```
+
+
+```{r testing world step function}
+world <- list(p1 = list(n1 = 10, n2 = 10),
+              p2 = list(n1 = 5, n2 = 5),
+              p3 = list(n1 = 1, n2 = 0),
+              p4 = list(n1 = 10, n2 = 0))
+
+params <- c(n1_r = 1,
+            n2_r = 1,
+            n1_K = 1000,
+            n2_K = 1000
+            )
+
+steps <- seq(0,1,1)
+
+world_step_growth(world, params, steps)  
+```
+
+```{r testing migration step function}
+migration_step(world,steps)
+```
+
+```{r testing simulation function}
+world <- list(p1 = list(n1 = 10, n2 = 10),
+              p2 = list(n1 = 5, n2 = 5),
+              p3 = list(n1 = 1, n2 = 0),
+              p4 = list(n1 = 10, n2 = 0))
+
+params <- c(n1_r = 0.1,
+            n2_r = 0.01,
+            n1_K = 1000,
+            n2_K = 1000
+            )
+
+times <- seq(0,100,1)
+
+simulation(world, params, times)
 ```
 
 
 
-From here, we plan on tracking the winners, and seeing frequently each population wins as their parameters(r and k) change, and plot our results
