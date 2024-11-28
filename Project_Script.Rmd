@@ -44,10 +44,18 @@ direction_generator()
 The following is the population growth, that calculates by how much a given population will grow based on the logistic growth equation 
 ```{r}
 growth <- function(r, k, n){
-  return((1 + r*(1-n/k))*n)
+  return((r*(1-min(n,k)/k))*min(n,k))
 }
 growth(r = 10, k = 100, n = 10)
 ```
+
+```{r}
+n_seq <- seq(1,200)
+growth(r = 0.9, k = 100, n = n_seq) %>% 
+  plot(x = n_seq)
+
+```
+
 
 The following chunk simulates the the growth and migration for 10 timesteps, note that there are a lot of things that we have hard coded a lot of the steps here instead of creating functions for everything so that we have a proof of concept that works. It first applies the logistic growth rate on all the populations in all the patches, then applies the movement function on each population in each patch after they have grown for 1 timestep, as this meets our assumptions more accurately.
 the plan is to have each of these steps converted to their unique functions of growth and movement across any world of any size. Then they will be combined to one "simulate" function so that eventually we can include the checker that will stop the simulation when one of the populations wins. 
@@ -88,6 +96,7 @@ while(i<1000){
 #checking if one of them won
   if(sum(unlist(world$"10")) > 0){
     result <- list(world)
+    edge_patch <- world[["10"]]
     
 #checking who won  
     #if(world[["10"]][["n1"]] == 0){
@@ -103,7 +112,7 @@ while(i<1000){
    # }
     
   #put the results in a new row in simulation_data  
-    simulation_data %>% add_row(worlds = result, timestep = i, parameters = list(params, winner  = "n1" )) -> simulation_data
+    simulation_data %>% add_row(worlds = result, timestep = i, parameters = list(params), winner = "n1") -> simulation_data
     return(simulation_data)
   }
   i <- i + 1
@@ -111,13 +120,12 @@ while(i<1000){
   }
 
 #making the dataframe empty
-simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = numeric())
+simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = character())
 
 #running our simulation for howevermany replications we want
 for(i in seq(1, 1000, 1)){
 simulation_data <- simulate(my_world, my_params)
 }
-
 ```
 
 
