@@ -202,7 +202,7 @@ dummy_sim3 <- cbind(simulation_data, simulation = 3)
 dummy_all <- rbind(dummy_sim1,dummy_sim2,dummy_sim3)
 ```
 
-```{r plots}
+```{r dummy plots}
 dummy_all %>%
   filter(!is.na(winner)) %>% 
   group_by(winner, r1, k1, r2, k2) %>% 
@@ -211,4 +211,136 @@ dummy_all %>%
   geom_histogram(aes(x = timestep, fill = winner), binwidth = 1)
 ```
 
+```{r world and params to test}
+# --WORLD--
+# make world with a number of patches
+world <- vector(mode="list",length=20)
+names(world) <- as.character(1:length(world))
+world[[1]] <- list("n1" = 10, "n2" = 10)
+
+for (i in 2:length(world)){
+  world[[i]] <- list("n1" = 0, "n2" = 0)
+  i<-i+1
+}
+
+# --PARAMETERS--
+# summary:
+# control
+# r1 halved
+# k1 halved
+# r1 doubled
+# k1 doubled
+# r1 halved, k1 halved      <-- not sure if we need 
+# r1 doubled, k1 doubled    <-- both of these or if one is enough
+# r1 halved, r2 doubled
+# k1 halved, k2 doubled
+
+# control
+params0 <- list("n1" = list("r" = 0.1, "k" = 1000), 
+                "n2" = list("r" = 0.1, "k" = 1000))
+# r1 halved
+params1 <- list("n1" = list("r" = 0.05, "k" = 1000), 
+                "n2" = list("r" = 0.1, "k" = 1000))
+# k1 halved
+params2 <- list("n1" = list("r" = 0.1, "k" = 500), 
+                "n2" = list("r" = 0.1, "k" = 1000))
+# r1 doubled
+params3 <- list("n1" = list("r" = 0.2, "k" = 1000), 
+                "n2" = list("r" = 0.1, "k" = 1000))
+# k1 doubled
+params4 <- list("n1" = list("r" = 0.1, "k" = 2000), 
+                "n2" = list("r" = 0.1, "k" = 1000))
+# r1 halved, k1 halved
+params5 <- list("n1" = list("r" = 0.05, "k" = 500), 
+                "n2" = list("r" = 0.1, "k" = 1000))
+# r1 doubled, k1 doubled
+params6 <- list("n1" = list("r" = 0.2, "k" = 2000), 
+                "n2" = list("r" = 0.1, "k" = 1000))
+# r1 halved, r2 doubled
+params7 <- list("n1" = list("r" = 0.05, "k" = 1000), 
+                "n2" = list("r" = 0.2, "k" = 1000))
+# k1 halved, k2 doubled
+params8 <- list("n1" = list("r" = 0.1, "k" = 500), 
+                "n2" = list("r" = 0.1, "k" = 2000))
+```
+
+
+```{r simulations}
+#making the empty dataframe
+simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = character(), r1 = numeric(), r2 = numeric(), k1 = numeric(), k2 = numeric()) -> sim_data_reset
+
+# SIM 1
+for(i in seq(1, 1000, 1)){
+simulation_data <- simulate(world, params1)
+}
+
+sim1 <- cbind(simulation_data, simulation = 1)
+
+# SIM 2
+simulation_data <- sim_data_reset
+for(i in seq(1, 1000, 1)){
+simulation_data <- simulate(world, params2)
+}
+
+sim2 <- cbind(simulation_data, simulation = 2)
+
+# SIM 3
+simulation_data <- sim_data_reset
+for(i in seq(1, 1000, 1)){
+simulation_data <- simulate(world, params3)
+}
+
+sim3 <- cbind(simulation_data, simulation = 3)
+
+# SIM 4
+simulation_data <- sim_data_reset
+for(i in seq(1, 1000, 1)){
+simulation_data <- simulate(world, params4)
+}
+
+sim4 <- cbind(simulation_data, simulation = 4)
+
+# SIM 5
+simulation_data <- sim_data_reset
+for(i in seq(1, 1000, 1)){
+simulation_data <- simulate(world, params5)
+}
+
+sim5 <- cbind(simulation_data, simulation = 5)
+
+# SIM 6
+simulation_data <- sim_data_reset
+for(i in seq(1, 1000, 1)){
+simulation_data <- simulate(world, params6)
+}
+
+sim6 <- cbind(simulation_data, simulation = 6)
+
+# SIM 7
+simulation_data <- sim_data_reset
+for(i in seq(1, 1000, 1)){
+simulation_data <- simulate(world, params7)
+}
+
+sim7 <- cbind(simulation_data, simulation = 7)
+
+# SIM 8
+simulation_data <- sim_data_reset
+for(i in seq(1, 1000, 1)){
+simulation_data <- simulate(world, params8)
+}
+
+sim8 <- cbind(simulation_data, simulation = 8)
+
+all_sims <- rbind(sim1,sim2,sim3,sim4,sim5,sim6,sim7,sim8)
+```
+
+```{r plot}
+all_sims %>%
+  filter(!is.na(winner)) %>% 
+  group_by(winner, r1, k1, r2, k2) %>% 
+  ggplot(aes(x = timestep))+
+  facet_wrap(~r1+r2+k1+k2,labeller = labeller(.multi_line=FALSE, .default=label_both))+
+  geom_histogram(aes(x = timestep, fill = winner), binwidth = 1)
+```
 
