@@ -9,18 +9,18 @@ library(tidyverse)
 
 For proof-of-concept we are currently manually creating one specific world and set of parameters to demonstrate how the functions will run on this example
 ```{r world and parameters}
-my_world <- list("1" = list("n1" = 10, "n2" = 10), 
-              "2" = list("n1" = 0, "n2" = 0), 
-              "3" = list("n1" = 0, "n2" = 0),
-              "4" = list("n1" = 0, "n2" = 0), 
-              "5" = list("n1" = 0, "n2" = 0), 
-              "6" = list("n1" = 0, "n2" = 0), 
-              "7" = list("n1" = 0, "n2" = 0), 
-              "8" = list("n1" = 0, "n2" = 0), 
-              "9" = list("n1" = 0, "n2" = 0), 
-              "10" = list("n1" = 0, "n2" = 0))
-my_params <- list("n1" = list("r" = 0.1, "k" = 1000), 
-               "n2" = list("r" = 0.1, "k" = 1000))
+# my_world <- list("1" = list("n1" = 10, "n2" = 10), 
+#               "2" = list("n1" = 0, "n2" = 0), 
+#               "3" = list("n1" = 0, "n2" = 0),
+#               "4" = list("n1" = 0, "n2" = 0), 
+#               "5" = list("n1" = 0, "n2" = 0), 
+#               "6" = list("n1" = 0, "n2" = 0), 
+#               "7" = list("n1" = 0, "n2" = 0), 
+#               "8" = list("n1" = 0, "n2" = 0), 
+#               "9" = list("n1" = 0, "n2" = 0), 
+#               "10" = list("n1" = 0, "n2" = 0))
+# my_params <- list("n1" = list("r" = 0.1, "k" = 1000), 
+#                "n2" = list("r" = 0.1, "k" = 1000))
 ```
 Now that the world is created, we have made a set of functions and algorithms to run our simulation.
 
@@ -102,24 +102,19 @@ simulate <- function(world, params){
         last_patch[[2]] == 0 & last_patch[[1]] > 0 ~ "n1"
           )
       
-      loser <- case_when(
-        winner == "n1" ~ "n2",
-        winner == "n2" ~ "n1",
-        winner == NA ~ NA
-      )
-      
-      winner_r <- params[[winner]][["r"]]
-      winner_k <- params[[winner]][["k"]]
-      loser_r <- params[[loser]][["r"]]
-      loser_k <- params[[loser]][["k"]]
+      r1 <- params[["n1"]][["r"]]
+      r2 <- params[["n2"]][["r"]]
+      k1 <- params[["n1"]][["k"]]
+      k2 <- params[["n2"]][["k"]]
       
       # put the results in a new row in simulation_data  
-      simulation_data %>% add_row(worlds = result, timestep = i, parameters = list(params), winner = winner, winner_r = winner_r, winner_k = winner_k, loser_r = loser_r, loser_k = loser_k) -> simulation_data
+      simulation_data %>% add_row(worlds = result, timestep = i, parameters = list(params), winner = winner, r1 = r1, r2 = r2, k1 = k1, k2 = k2) -> simulation_data
       return(simulation_data)
     }
     i <- i + 1
   }
-  }
+}
+
 ```
 
 ```{r testing simulation function}
@@ -150,7 +145,7 @@ From here, we plan on tracking the winners, and seeing frequently each populatio
 #                     "10" = list("n1" = 0, "n2" = 0))
 
 # make world with a number of patches
-dummy_world <- vector(mode="list",length=10)
+dummy_world <- vector(mode="list",length=20)
 names(dummy_world) <- as.character(1:length(dummy_world))
 dummy_world[[1]] <- list("n1" = 10, "n2" = 10)
 
@@ -172,7 +167,7 @@ dummy_params3 <- list("n1" = list("r" = 0.1, "k" = 500),
 ```{r dummy simulations}
 # SIM 1
 #making the dataframe empty
-simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = character(), winner_r = numeric(), winner_k = numeric(), loser_r = numeric(), loser_k = numeric())
+simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = character(), r1 = numeric(), r2 = numeric(), k1 = numeric(), k2 = numeric()) -> sim_data_reset
 
 #running our simulation for howevermany replications we want
 for(i in seq(1, 1000, 1)){
@@ -183,22 +178,22 @@ dummy_sim1 <- cbind(simulation_data, simulation = 1)
 
 # SIM 2
 #making the dataframe empty
-simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = character(), winner_r = numeric(), winner_k = numeric(), loser_r = numeric(), loser_k = numeric())
+simulation_data <- sim_data_reset
 
 #running our simulation for howevermany replications we want
 for(i in seq(1, 1000, 1)){
-simulation_data <- simulate(dummy_world, dummy_params1)
+simulation_data <- simulate(dummy_world, dummy_params2)
 }
 
 dummy_sim2 <- cbind(simulation_data, simulation = 2)
 
 # SIM 3
 #making the dataframe empty
-simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(), winner = character(), winner_r = numeric(), winner_k = numeric(), loser_r = numeric(), loser_k = numeric())
+simulation_data <- sim_data_reset
 
 #running our simulation for howevermany replications we want
 for(i in seq(1, 1000, 1)){
-simulation_data <- simulate(dummy_world, dummy_params1)
+simulation_data <- simulate(dummy_world, dummy_params3)
 }
 
 dummy_sim3 <- cbind(simulation_data, simulation = 3)
@@ -209,16 +204,11 @@ dummy_all <- rbind(dummy_sim1,dummy_sim2,dummy_sim3)
 
 ```{r plots}
 dummy_all %>%
-  ggplot(aes(x=timestep, fill=winner)) +
-  geom_histogram() +
-  facet_wrap(dummy_all$simulation)
-
-dummy_all %>%
-  group_by(simulation, winner) %>%
-  ggplot(aes(timestep, fill=interaction(simulation,winner))) +
-  geom_histogram()
-
-  
+  filter(!is.na(winner)) %>% 
+  group_by(winner, r1, k1, r2, k2) %>% 
+  ggplot(aes(x = timestep))+
+  facet_wrap(~r1+r2+k1+k2)+
+  geom_histogram(aes(x = timestep, fill = winner), binwidth = 1)
 ```
 
 
