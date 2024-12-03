@@ -4,7 +4,7 @@ Just loading any necessary libraries
 
 ```{r libraries}
 library(tidyverse)
-
+library(ggplot2)
 ```
 
 For proof-of-concept we are currently manually creating one specific world and set of parameters to demonstrate how the functions will run on this example
@@ -29,8 +29,8 @@ my_world <- list("1" = list("n1" = 10, "n2" = 10),
               "18" = list("n1" = 0, "n2" = 0),
               "19" = list("n1" = 0, "n2" = 0),
               "20" = list("n1" = 0, "n2" = 0))
-my_params <- list("n1" = list("r" = 0.5, "k" = 900), 
-               "n2" = list("r" = 0.5, "k" = 100))
+my_params <- list("n1" = list("r" = 0.9, "k" = 900), 
+               "n2" = list("r" = 0.1, "k" = 100))
 ```
 Now that the world is created, we have made a set of functions and algorithms to run our simulation.
 
@@ -57,13 +57,6 @@ growth <- function(r, k, n){
   return((r*(1-min(n,k)/k))*min(n,k))
 }
 growth(r = 10, k = 100, n = 10)
-```
-
-```{r sanity check of our growth funcition}
-n_seq <- seq(1,200)
-growth(r = 0.9, k = 100, n = for(n in n_seq){return(n)}) %>% 
-  plot()
-
 ```
 
 
@@ -129,19 +122,35 @@ simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = li
 
 
 ```{r running the simulation}
-for(i in seq(1, 100, 1)){
+for(i in seq(1, 900, 1)){
 simulation_data <- simulate(my_world, my_params)
 }
 ```
 
-```{r making histograms}
-  simulation_data %>% filter(!is.na(winner)) %>% group_by(winner, r1, k1, r2, k2) %>% 
+```{r 1 sim isolated}
+  simulation_data %>% filter(!is.na(winner)) %>% group_by(winner, r1, k1, r2, k2) %>% filter(r1 == 0.5, k1 == 900, r2 == 0.5, k2 == 100) %>% 
   ggplot(aes(x = timestep))+
-  facet_wrap(~r1+r2+k1+k2)+
-  geom_histogram(aes(x = timestep, fill = winner), binwidth = 1, colour = "black")
+  scale_fill_ordinal()+
+  facet_wrap(~r1+r2+k1+k2, labeller = labeller(.multi_line = FALSE, .default = label_both))+
+  geom_histogram(aes(x = timestep, fill = winner), binwidth = 1, colour = "black")+
+  labs(x = "Win Time", y = "# of Wins", title = "Comparison of Win Speed at Different r and K Values")+
+  theme(text = element_text(family = "Tahoma"), 
+        axis.title = element_text(face = "bold"),
+        panel.background = element_rect(fill = "white"),
+        panel.grid = element_line(colour = "lightgrey"))
  
 ```
 
-
-
-From here, we plan on tracking the winners, and seeing frequently each population wins as their parameters(r and k) change, and plot our results
+```{r combined}
+  simulation_data %>% filter(!is.na(winner)) %>% group_by(winner, r1, k1, r2, k2) %>% 
+  ggplot(aes(x = timestep))+
+  scale_fill_ordinal()+
+  facet_wrap(~r1+r2+k1+k2, labeller = labeller(.multi_line = FALSE, .default = label_both))+
+  geom_histogram(aes(x = timestep, fill = winner), binwidth = 1, colour = "black")+
+  labs(x = "Win Time", y = "# of Wins", title = "Comparison of Win Speed at Different r and K Values")+
+  theme(text = element_text(family = "Tahoma"), 
+        axis.title = element_text(face = "bold"),
+        panel.background = element_rect(fill = "white"),
+        panel.grid = element_line(colour = "lightgrey"))
+ 
+```
