@@ -1,0 +1,194 @@
+
+
+Just loading any necessary libraries
+
+```{r libraries}
+library(tidyverse)
+library(ggplot2)
+```
+
+
+Our Question: Would a population with a higher r value but lower K or a population with a lower
+r value but a higher K would be able to expand there range faster across habitat patches.
+
+We hypothesized that the population with higher r but lower K would be able to expand there range 
+at a faster rate.
+
+In order to build the simulation we had to make make several assumptions about the population:
+
+-Migration is a random event
+
+-Individuals can only migrate to the nearest patch on either side
+
+-Constant growth rate r
+
+-Carrying capacity (K) is fixed for each population
+
+-No difference in the quality of habitat patches
+
+-The populations are only moving in 1 dimensional space
+
+-No competition between species
+
+'Wins' were counted based on what population reached the furthest patch from the starting patch
+first.
+
+
+Nested list containing all the patches and the populations for both n1 and n2 inside. With a separate 
+nested list containg the parameters for both populations.
+```{r worlds and params generator}
+my_world <- list("1" = list("n1" = 10, "n2" = 10), 
+              "2" = list("n1" = 0, "n2" = 0), 
+              "3" = list("n1" = 0, "n2" = 0),
+              "4" = list("n1" = 0, "n2" = 0), 
+              "5" = list("n1" = 0, "n2" = 0), 
+              "6" = list("n1" = 0, "n2" = 0), 
+              "7" = list("n1" = 0, "n2" = 0), 
+              "8" = list("n1" = 0, "n2" = 0), 
+              "9" = list("n1" = 0, "n2" = 0), 
+              "10" = list("n1" = 0, "n2" = 0),
+              "11" = list("n1" = 0, "n2" = 0),
+              "12" = list("n1" = 0, "n2" = 0),
+              "13" = list("n1" = 0, "n2" = 0),
+              "14" = list("n1" = 0, "n2" = 0),
+              "15" = list("n1" = 0, "n2" = 0),
+              "16" = list("n1" = 0, "n2" = 0),
+              "17" = list("n1" = 0, "n2" = 0),
+              "18" = list("n1" = 0, "n2" = 0),
+              "19" = list("n1" = 0, "n2" = 0),
+              "20" = list("n1" = 0, "n2" = 0))
+my_params <- list("n1" = list("r" = 0.3, "k" = 300), 
+               "n2" = list("r" = 0.6, "k" = 150))
+```
+Now that the world is created, we  made a set of functions and algorithms to run our simulation
+
+The migration function uses a random binomial draw to determine the number of migrants in a 
+population
+```{r migrants generator}
+migrants_number <- function(n){
+  return(rbinom(n = 1, size = n, prob = 0.5))
+}
+```
+
+The direction generator function random picks between 1 and -1 to determine what direction the
+migrants will move.
+```{r direction generator function}
+direction_generator <-function(){
+  return(sample(c(-1, 1), 1))
+}
+direction_generator()
+
+```
+
+Our popultion growth function uses a discrete time logsistic growth equation, that produces the 
+population in the next time step instead of returning a rate of change.
+```{r growth function}
+growth <- function(r, k, n){
+  return((r*(1-min(n,k)/k))*min(n,k))
+}
+growth(r = 10, k = 100, n = 10)
+```
+
+
+Here we build the our simulator function using a while loop that will run the simulation until one
+population 'wins'. We call all functions made above and loop over them for each patch and each population within a patch.
+Before using _if_ and _ifelse_ statements to determine the winner and return the results of each simulation.
+
+```{r THE SIMULATOR}
+simulate <- function(world, params){
+
+i <- 0
+while(i<1000){
+  
+#growth on all patches
+  for(patch in seq(1, length(world))){
+    for(pop in seq(1, length(world[[patch]]))){
+      curr_pop_name <- names(world[[patch]][pop])
+      curr_pop <- world[[patch]][[curr_pop_name]]
+      world[[patch]][[curr_pop_name]] <- world[[patch]][[curr_pop_name]] + 
+        round(growth(r = params[[curr_pop_name]][["r"]], k = params[[curr_pop_name]][["k"]], n = curr_pop)) -> curr_pop
+    }
+  }
+  
+  #movement on all patches
+  for(patch in seq(1, length(world))){
+    for(pop in seq(1, length(world[[patch]]))){
+      curr_pop_name <- names(world[[patch]][pop])
+      curr_pop <- world[[patch]][[curr_pop_name]]
+      migrants <- migrants_number(floor(curr_pop))
+      direction <- direction_generator()
+      destination <- patch + direction
+      if(all(destination > 0 & destination <= length(world))){
+        world[[patch]][[curr_pop_name]] <- world[[patch]][[curr_pop_name]] - migrants
+        world[[destination]][[curr_pop_name]] <- world[[destination]][[curr_pop_name]] + migrants
+    }
+   }
+  }
+  
+#checking if one of them won
+  if(sum(unlist(world$"20")) > 0){
+    result <- list(world)
+    edge_patch <- world$"20"
+  #checking which one said winner is
+    the_winner <- character()
+    ifelse(edge_patch$n1 > 0 && edge_patch$n2 == 0, the_winner <- "n1", 
+           ifelse(edge_patch$n1 == 0 && edge_patch$n2 > 0, the_winner <- "n2", the_winner <- NA))
+    
+    #put the results in a new row in simulation_data
+    
+    simulation_data %>% add_row(worlds = result, timestep = i, parameters = list(params),
+                                winner = the_winner,  r1 = params$n1$r, 
+                                r2 = params$n2$r, k1 = params$n1$k, k2 = params$n2$k) -> simulation_data
+    return(simulation_data)
+  }
+  i <- i + 1
+}
+  }
+```
+
+Making an empty data frame to store the runs of multiple simulation runs.
+```{r clearing dataframe}
+#making the dataframe empty
+simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(),
+    winner = character(), r1 = numeric(), r2 = numeric(), k1 = numeric(), k2 = numeric())
+
+```
+
+Here we loop over the simulation a 100 times at the same parameters.
+```{r running the simulation}
+for(i in seq(1, 100, 1)){
+simulation_data <- simulate(my_world, my_params)
+}
+```
+
+Plotting the results of our simulation in a histograms in order to look at the numbers of wins 
+for each population at a given set of parameters
+```{r 1 sim isolated}
+  simulation_data %>% filter(!is.na(winner)) %>% 
+  group_by(winner, r1, k1, r2, k2)  %>% 
+  filter(r1 == 0.3, k1 == 300, r2 == 0.6, k2 == 150) %>% 
+  ggplot(aes(x = timestep))+
+  scale_fill_ordinal()+
+  facet_wrap(~r1+r2+k1+k2, labeller = labeller(.multi_line = FALSE, .default = label_both))+
+  geom_histogram(aes(x = timestep, fill = winner), binwidth = 1, colour = "black")+
+  labs(x = "Win Time", y = "# of Wins", title = "Comparison of Win Speed at Different r and K Values")+
+  theme(text = element_text(family = "Tahoma"), 
+        axis.title = element_text(face = "bold"),
+        panel.background = element_rect(fill = "white"),
+        panel.grid = element_line(colour = "lightgrey"))
+ 
+```
+
+```{r combined}
+  simulation_data %>% filter(!is.na(winner)) %>% group_by(winner, r1, k1, r2, k2) %>% 
+  ggplot(aes(x = timestep))+
+  scale_fill_ordinal()+
+  facet_wrap(~r1+r2+k1+k2, labeller = labeller(.multi_line = FALSE, .default = label_both))+
+  geom_histogram(aes(x = timestep, fill = winner), binwidth = 1, colour = "black")+
+  labs(x = "Win Time", y = "# of Wins", title = "Comparison of Win Speed at Different r and K Values")+
+  theme(text = element_text(family = "Tahoma"), 
+        axis.title = element_text(face = "bold"),
+        panel.background = element_rect(fill = "white"),
+        panel.grid = element_line(colour = "lightgrey"))
+ 
+```
