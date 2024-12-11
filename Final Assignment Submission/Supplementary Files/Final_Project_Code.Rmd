@@ -1,0 +1,156 @@
+
+
+Just loading any necessary libraries
+
+```{r libraries}
+# Loading all necessary libraries
+library(tidyverse)
+library(ggplot2)
+library(extrafont)#just extra fonts for plotting
+```
+
+To create our world, we made a nested list containing all the patches and the populations for both n1 and n2 inside. With a separate nested list containing the parameters for both populations.
+```{r worlds and params generator}
+my_world <- list("1" = list("n1" = 10, "n2" = 10), #creating the world, which includes 20 patches of 2 populations
+              "2" = list("n1" = 0, "n2" = 0), 
+              "3" = list("n1" = 0, "n2" = 0),
+              "4" = list("n1" = 0, "n2" = 0), 
+              "5" = list("n1" = 0, "n2" = 0), 
+              "6" = list("n1" = 0, "n2" = 0), 
+              "7" = list("n1" = 0, "n2" = 0), 
+              "8" = list("n1" = 0, "n2" = 0), 
+              "9" = list("n1" = 0, "n2" = 0), 
+              "10" = list("n1" = 0, "n2" = 0),
+              "11" = list("n1" = 0, "n2" = 0),
+              "12" = list("n1" = 0, "n2" = 0),
+              "13" = list("n1" = 0, "n2" = 0),
+              "14" = list("n1" = 0, "n2" = 0),
+              "15" = list("n1" = 0, "n2" = 0),
+              "16" = list("n1" = 0, "n2" = 0),
+              "17" = list("n1" = 0, "n2" = 0),
+              "18" = list("n1" = 0, "n2" = 0),
+              "19" = list("n1" = 0, "n2" = 0),
+              "20" = list("n1" = 0, "n2" = 0))
+my_params <- list("n1" = list("r" = 0.6, "k" = 300), "n2" = list("r" = 0.6, "k" = 300)) #creating the parameters(set to one specific value we can change as we desire)
+```
+Now that the world is created, we  made a set of functions and algorithms to run our simulation
+
+The migration function uses a random binomial draw to determine the number of migrants in a 
+population
+```{r migrants generator}
+migrants_number <- function(number){# defining the function
+  return(rbinom(n = 1, size = number, prob = 0.5))# returning a single random binomial sample, set at probability 0.5 from the population.
+  #i.e this will return a binomially distributed random number from 0 -> the given populations number
+}
+
+```
+
+The direction generator function random picks between 1 and -1 to determine what direction the
+migrants will move.
+```{r direction generator function}
+direction_generator <-function(){# function definition
+  return(sample(c(-1, 1), 1))# randomly returning + or - 1
+}
+direction_generator()#simply testing the function
+
+```
+
+Our popultion growth function uses a discrete time logsistic growth equation, that produces the 
+population in the next time step instead of returning a rate of change.
+```{r growth function}
+growth <- function(r, k, n){# function definition
+  return((r*(1-min(n,k)/k))*min(n,k))# returning the n(t+1) of discrete time logistic growth.
+}
+growth(r = 10, k = 1000, n = 10)
+```
+
+
+Here we build the our simulator function using a while loop that will run the simulation until one
+population 'wins'. We call all functions made above and loop over them for each patch and each population within a patch.
+Before using _if_ and _ifelse_ statements to determine the winner and return the results of each simulation.
+
+```{r THE SIMULATOR}
+simulate <- function(world, params){ #function definition
+
+i <- 0 #i counter creaion
+while(i<1000){ # while loop which stops when i reaches 1000 (there's a i += 1 below)
+#growth on all patches
+  for(patch in seq(1, length(world))){
+    for(pop in seq(1, length(world[[patch]]))){# iterating through each population in each patch
+      curr_pop_name <- names(world[[patch]][pop])# isolating the iterated population name for easier use
+      curr_pop <- world[[patch]][[curr_pop_name]]# isolating the iterated population value for easier use
+      world[[patch]][[curr_pop_name]] <- world[[patch]][[curr_pop_name]] + 
+        round(growth(r = params[[curr_pop_name]][["r"]], k = params[[curr_pop_name]][["k"]], n = curr_pop)) -> curr_pop# calculating the population at the next timestep, and adding that it to curr_pop
+    }
+  }
+# so far the logistic growth step of our system's life cycle was applied to every population in every patch
+
+#next we will apply the migration
+  
+  #movement on all patches
+  for(patch in seq(1, length(world))){
+    for(pop in seq(1, length(world[[patch]]))){# iterating through each population in each patch
+      curr_pop_name <- names(world[[patch]][pop])# isolating the iterated population name for easier use
+      curr_pop <- world[[patch]][[curr_pop_name]]# isolating the iterated population value for easier use
+      migrants <- migrants_number(floor(curr_pop))# determining the number of migrants
+      direction <- direction_generator()# determining which direction the will go
+      destination <- patch + direction# isolating the destination patch
+      if(all(destination > 0 & destination <= length(world))){# checking if the destination patch exists
+        world[[patch]][[curr_pop_name]] <- world[[patch]][[curr_pop_name]] - migrants# subtracting the migrants from original patch
+        world[[destination]][[curr_pop_name]] <- world[[destination]][[curr_pop_name]] + migrants# adding the migrants into new patch
+    }
+   }
+  }
+  
+#checking if one of the populations won
+  if(sum(unlist(world$"20")) > 0){# checking if the final patch has any members in it( = 0 if empty, > 0 otherwise). If it does:
+    result <- list(world)# save the state of the world, as is into result
+    edge_patch <- world$"20"# Isolate the final patch so that we can:
+  #check which one the winner is
+    the_winner <- character()
+    ifelse(edge_patch$n1 > 0 && edge_patch$n2 == 0, the_winner <- "n1", 
+           ifelse(edge_patch$n1 == 0 && edge_patch$n2 > 0, the_winner <- "n2", the_winner <- NA))# isolate the winner based on the ifelse statement
+    
+    #put the results in a new row in simulation_data
+    
+    simulation_data %>% add_row(worlds = result, timestep = i, parameters = list(params),
+                                winner = the_winner,  r1 = params$n1$r, 
+                                r2 = params$n2$r, k1 = params$n1$k, k2 = params$n2$k) -> simulation_data
+    return(simulation_data)#retun the data as a whole
+  }
+  i <- i + 1
+}
+  }
+```
+
+Making an empty data frame to store the runs of multiple simulation runs.
+```{r clearing dataframe}
+#making the data frame (empty at first)
+simulation_data <- tibble(worlds = list(), timestep = numeric(), parameters = list(),
+    winner = character(), r1 = numeric(), r2 = numeric(), k1 = numeric(), k2 = numeric())
+
+```
+
+Here we loop over the simulation a 100 times at the same parameters.
+```{r running the simulation}
+for(i in seq(1, 400, 1)){# for loop of 400 iterations, to give us 400 replicates of the simulation
+simulation_data <- simulate(my_world, my_params)# running the simulation (once)
+}
+```
+
+
+```{r combined}
+  simulation_data %>% 
+  filter(!is.na(winner)) %>% #removing any NA points (the tie cases)
+  group_by(winner, r1, k1, r2, k2) %>%# arranging the data neatly across the columns
+  ggplot(aes(x = timestep, colour = winner))+
+  facet_wrap(~r1+r2+k1+k2, labeller = labeller(.multi_line = FALSE, .default = label_both))+# faceting over the parameters then labeling them appropriately
+  geom_freqpoly(data = subset(simulation_data, winner == "n2"), binwidth = 1)+#the frequency polygon for whenever n2 won
+  geom_freqpoly(data = subset(simulation_data, winner == "n1"), binwidth = 1,  aes(y = ..count..*(1)))+# frequency polygon for whenever n1 has won(the y aesthetic is there to allow us to invert the line for comparison)
+  labs(x = "Win Time", y = "# of Wins", title = "Comparison of Win Speed at Different r and K Values")+# labelling
+  theme(text = element_text(family = "Tahoma"),# stylistic changes
+        axis.title = element_text(face = "bold"),
+        panel.background = element_rect(fill = "white"),
+        panel.grid = element_line(colour = "transparent"))
+ 
+```
